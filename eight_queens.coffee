@@ -46,6 +46,9 @@ chessboard_view = (n) ->
   w = 40
   h = 40
   delay = 100
+  current_callback = null
+  paused = false
+  toggle_button = document.getElementById("toggle")
 
   draw_board = ->
     for x in [0..n] 
@@ -62,14 +65,31 @@ chessboard_view = (n) ->
     y = y * h
     ctx.fillRect(x+1, y+1, w-2, h-2)
 
+  toggle = ->
+    if !paused
+      paused = true
+      toggle_button.value = "resume"
+    else
+      paused = false
+      toggle_button.value = "pause"
+      current_callback()
+    false
+
+  toggle_button.onclick = toggle
+
+  resume = ->
+    current_callback() unless paused
+
   draw_board()
 
   place_queen: (x, y, callback) ->
     draw(x, y, 'black')
-    setTimeout(callback, delay)
+    current_callback = callback
+    setTimeout(resume, delay)
   hide_queen: (x, y, callback) ->
     draw(x, y, 'white')
-    setTimeout(callback, delay)
+    current_callback = callback
+    setTimeout(resume, delay)
 
 display = (width, height) ->
   view = view_2d(width, height)

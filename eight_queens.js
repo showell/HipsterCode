@@ -51,12 +51,15 @@
     return place_one_queen();
   };
   chessboard_view = function(n) {
-    var canvas, ctx, delay, draw, draw_board, h, w;
+    var canvas, ctx, current_callback, delay, draw, draw_board, h, paused, resume, toggle, toggle_button, w;
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     w = 40;
     h = 40;
     delay = 100;
+    current_callback = null;
+    paused = false;
+    toggle_button = document.getElementById("toggle");
     draw_board = function() {
       var x, y;
       for (x = 0; (0 <= n ? x <= n : x >= n); (0 <= n ? x += 1 : x -= 1)) {
@@ -75,15 +78,34 @@
       y = y * h;
       return ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
     };
+    toggle = function() {
+      if (!paused) {
+        paused = true;
+        toggle_button.value = "resume";
+      } else {
+        paused = false;
+        toggle_button.value = "pause";
+        current_callback();
+      }
+      return false;
+    };
+    toggle_button.onclick = toggle;
+    resume = function() {
+      if (!paused) {
+        return current_callback();
+      }
+    };
     draw_board();
     return {
       place_queen: function(x, y, callback) {
         draw(x, y, 'black');
-        return setTimeout(callback, delay);
+        current_callback = callback;
+        return setTimeout(resume, delay);
       },
       hide_queen: function(x, y, callback) {
         draw(x, y, 'white');
-        return setTimeout(callback, delay);
+        current_callback = callback;
+        return setTimeout(resume, delay);
       }
     };
   };
