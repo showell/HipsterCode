@@ -18,18 +18,17 @@
     return false;
   };
   solve = function(n, view) {
-    var pieces_placed, x, y, _results;
+    var pieces_placed, place_one_queen, x, y;
     pieces_placed = [];
     x = 0;
-    _results = [];
-    while (x < n && x >= 0) {
-      if (pieces_placed[x]) {
-        y = pieces_placed[x];
-        view.hide_queen(x, y);
-        y += 1;
-        pieces_placed = pieces_placed.slice(0, x);
-      } else {
-        y = 0;
+    y = 0;
+    place_one_queen = function() {
+      var x_place, y_hide, y_place;
+      if (x < 0) {
+        return;
+      }
+      if (x >= n) {
+        return;
       }
       while (y < n) {
         if (!under_attack(y, pieces_placed)) {
@@ -37,16 +36,30 @@
         }
         y += 1;
       }
-      _results.push(y < n ? (view.place_queen(x, y), pieces_placed[x] = y, x += 1) : x -= 1);
-    }
-    return _results;
+      if (y < n) {
+        x_place = x;
+        y_place = y;
+        pieces_placed[x] = y;
+        x += 1;
+        y = 0;
+        return view.place_queen(x_place, y_place, place_one_queen);
+      } else {
+        x -= 1;
+        y_hide = pieces_placed[x];
+        y = y_hide + 1;
+        pieces_placed = pieces_placed.slice(0, x);
+        return view.hide_queen(x, y_hide, place_one_queen);
+      }
+    };
+    return place_one_queen();
   };
   chessboard_view = function(n) {
-    var canvas, ctx, draw, draw_board, h, w;
+    var canvas, ctx, delay, draw, draw_board, h, w;
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     w = 40;
     h = 40;
+    delay = 100;
     draw_board = function() {
       var x, y;
       for (x = 0; (0 <= n ? x <= n : x >= n); (0 <= n ? x += 1 : x -= 1)) {
@@ -67,11 +80,13 @@
     };
     draw_board();
     return {
-      place_queen: function(x, y) {
-        return draw(x, y, 'black');
+      place_queen: function(x, y, callback) {
+        draw(x, y, 'black');
+        return setTimeout(callback, delay);
       },
-      hide_queen: function(x, y) {
-        return draw(x, y, 'white');
+      hide_queen: function(x, y, callback) {
+        draw(x, y, 'white');
+        return setTimeout(callback, delay);
       }
     };
   };

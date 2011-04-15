@@ -18,29 +18,35 @@ under_attack = (y_new, pieces_placed) ->
 solve = (n, view) ->
   pieces_placed = [] # array of y-coordinates
   x = 0
-  while x < n && x >= 0
-    if pieces_placed[x]
-      y = pieces_placed[x]
-      view.hide_queen(x, y)
-      y += 1
-      pieces_placed = pieces_placed[0...x]
-    else
-      y = 0
+  y = 0
+  place_one_queen = ->
+    return if x < 0
+    return if x >= n
     while y < n
       break if !under_attack(y, pieces_placed)
       y += 1
     if y < n
-      view.place_queen(x, y)
+      x_place = x
+      y_place = y
       pieces_placed[x] = y
       x += 1
+      y = 0
+      view.place_queen(x_place, y_place, place_one_queen)
     else
+      # backtracking
       x -= 1
+      y_hide = pieces_placed[x]
+      y = y_hide + 1
+      pieces_placed = pieces_placed[0...x]
+      view.hide_queen(x, y_hide, place_one_queen)
+  place_one_queen()
 
 chessboard_view = (n) ->
   canvas = document.getElementById("canvas")
   ctx = canvas.getContext("2d")
   w = 40
   h = 40
+  delay = 100
 
   draw_board = ->
     for x in [0..n] 
@@ -59,10 +65,12 @@ chessboard_view = (n) ->
 
   draw_board()
 
-  place_queen: (x, y) ->
+  place_queen: (x, y, callback) ->
     draw(x, y, 'black')
-  hide_queen: (x, y) ->
+    setTimeout(callback, delay)
+  hide_queen: (x, y, callback) ->
     draw(x, y, 'white')
+    setTimeout(callback, delay)
 
 display = (width, height) ->
   view = view_2d(width, height)
