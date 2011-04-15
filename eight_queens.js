@@ -18,17 +18,18 @@
     return false;
   };
   solve = function(n, view) {
-    var pieces_placed, place_one_queen, x, y;
+    var backtrack, next_solution, pieces_placed, try_to_place_queen, x, y;
     pieces_placed = [];
     x = 0;
     y = 0;
-    place_one_queen = function() {
-      var x_place, y_hide, y_place;
+    try_to_place_queen = function() {
+      var x_place, y_place;
       if (x >= n) {
-        view.declare_victory(pieces_placed);
+        view.declare_victory(pieces_placed, next_solution);
         return;
       }
       if (x < 0) {
+        view.declare_no_more_solutions();
         return;
       }
       while (y < n && under_attack(y, pieces_placed)) {
@@ -40,19 +41,30 @@
         pieces_placed[x] = y;
         x += 1;
         y = 0;
-        return view.place_queen(x_place, y_place, place_one_queen);
+        return view.place_queen(x_place, y_place, try_to_place_queen);
       } else {
-        x -= 1;
-        y_hide = pieces_placed[x];
-        y = y_hide + 1;
-        pieces_placed = pieces_placed.slice(0, x);
-        return view.hide_queen(x, y_hide, place_one_queen);
+        return backtrack();
       }
     };
-    return place_one_queen();
+    backtrack = function() {
+      var y_hide;
+      x -= 1;
+      y_hide = pieces_placed[x];
+      y = y_hide + 1;
+      pieces_placed = pieces_placed.slice(0, x);
+      return view.hide_queen(x, y_hide, try_to_place_queen);
+    };
+    next_solution = function() {
+      x = 0;
+      while (x < n && pieces_placed[x] < n - 1) {
+        x += 1;
+      }
+      return view.clear_board(pieces_placed, x, backtrack);
+    };
+    return try_to_place_queen();
   };
   chessboard_view = function(n) {
-    var canvas, ctx, current_callback, delay, draw, draw_board, h, paused, resume, step, step_button, toggle, toggle_button, w;
+    var canvas, ctx, current_callback, delay, draw, draw_board, h, log, log_result, paused, resume, step, step_button, toggle, toggle_button, w;
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     w = 40;
@@ -62,6 +74,7 @@
     paused = false;
     toggle_button = document.getElementById("toggle");
     step_button = document.getElementById("step");
+    log = document.getElementById("log");
     draw_board = function() {
       var x, y;
       for (x = 0; (0 <= n ? x <= n : x >= n); (0 <= n ? x += 1 : x -= 1)) {
@@ -102,26 +115,47 @@
         return current_callback();
       }
     };
+    log_result = function(v) {
+      return log.innerHTML += "\n" + v.toString();
+    };
     draw_board();
     return {
       place_queen: function(x, y, callback) {
         draw(x, y, 'black');
-        current_callback = callback;
-        return setTimeout(resume, delay);
+        if (callback != null) {
+          current_callback = callback;
+          return setTimeout(resume, delay);
+        }
       },
       hide_queen: function(x, y, callback) {
         draw(x, y, 'white');
         current_callback = callback;
         return setTimeout(resume, delay);
       },
-      declare_victory: function(pieces_placed) {
-        var x, y, _len, _results;
-        _results = [];
+      declare_victory: function(pieces_placed, callback) {
+        var x, y, _len;
+        delay = 5;
         for (x = 0, _len = pieces_placed.length; x < _len; x++) {
           y = pieces_placed[x];
-          _results.push(draw(x, y, 'blue'));
+          draw(x, y, 'blue');
         }
-        return _results;
+        current_callback = callback;
+        paused = true;
+        toggle_button.value = "find next solution";
+        return log_result(pieces_placed);
+      },
+      clear_board: function(pieces_placed, x, callback) {
+        var y;
+        while (x < pieces_placed.length) {
+          y = pieces_placed[x];
+          draw(x, y, 'white');
+          x += 1;
+        }
+        current_callback = callback;
+        return setTimeout(resume, delay);
+      },
+      declare_no_more_solutions: function() {
+        return alert("No more solutions");
       }
     };
   };
@@ -149,7 +183,7 @@
   };
   (function() {
     var n, view;
-    n = 8;
+    n = 7;
     view = chessboard_view(n);
     return solve(n, view);
   })();

@@ -19,11 +19,13 @@ solve = (n, view) ->
   pieces_placed = [] # array of y-coordinates indexed by x
   x = 0
   y = 0
-  place_one_queen = ->
+  try_to_place_queen = ->
     if x >= n
-      view.declare_victory(pieces_placed)
+      view.declare_victory(pieces_placed, next_solution)
       return
-    return if x < 0
+    if x < 0
+      view.declare_no_more_solutions()
+      return
     while y < n && under_attack(y, pieces_placed)
       y += 1
     if y < n
@@ -32,15 +34,31 @@ solve = (n, view) ->
       pieces_placed[x] = y
       x += 1
       y = 0
-      view.place_queen(x_place, y_place, place_one_queen)
+      view.place_queen(x_place, y_place, try_to_place_queen)
     else
-      # backtracking
+      backtrack()
+
+  backtrack = ->
+      # We backtrack when we determine (somewhat lazily) that
+      # the rest of the board is under attack.  We go back to
+      # the most recent queen, pull her off the board, then
+      # calculate the next tentative position for her on the file
+      # (but we don't actually place it until the callback).
       x -= 1
       y_hide = pieces_placed[x]
       y = y_hide + 1
       pieces_placed = pieces_placed[0...x]
-      view.hide_queen(x, y_hide, place_one_queen)
-  place_one_queen()
+      view.hide_queen(x, y_hide, try_to_place_queen)
+
+  next_solution = ->
+    # Find the queen that is in the bottom rank, and then
+    # backtrack from there.
+    x = 0
+    while x < n && pieces_placed[x] < n - 1
+      x += 1
+    view.clear_board(pieces_placed, x, backtrack)
+
+  try_to_place_queen()
 
 chessboard_view = (n) ->
   canvas = document.getElementById("canvas")
@@ -52,6 +70,7 @@ chessboard_view = (n) ->
   paused = false
   toggle_button = document.getElementById("toggle")
   step_button = document.getElementById("step")
+  log = document.getElementById("log")
 
   draw_board = ->
     for x in [0..n] 
@@ -88,19 +107,41 @@ chessboard_view = (n) ->
   resume = ->
     current_callback() unless paused
 
+  log_result = (v) ->
+    log.innerHTML += "\n" + v.toString()
+
   draw_board()
 
   place_queen: (x, y, callback) ->
     draw(x, y, 'black')
-    current_callback = callback
-    setTimeout(resume, delay)
+    if callback?
+      current_callback = callback
+      setTimeout(resume, delay)
+
   hide_queen: (x, y, callback) ->
     draw(x, y, 'white')
     current_callback = callback
     setTimeout(resume, delay)
-  declare_victory: (pieces_placed) ->
+
+  declare_victory: (pieces_placed, callback) ->
+    delay = 5 # let's go faster after first solution
     for y, x in pieces_placed
       draw(x, y, 'blue')
+    current_callback = callback
+    paused = true
+    toggle_button.value = "find next solution"
+    log_result(pieces_placed)
+
+  clear_board: (pieces_placed, x, callback) ->
+    while x < pieces_placed.length
+      y = pieces_placed[x]
+      draw(x, y, 'white')
+      x += 1
+    current_callback = callback
+    setTimeout(resume, delay)
+
+  declare_no_more_solutions: ->
+    alert("No more solutions")
 
 display = (width, height) ->
   view = view_2d(width, height)
