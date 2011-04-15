@@ -30,10 +30,7 @@
       if (x >= n) {
         return;
       }
-      while (y < n) {
-        if (!under_attack(y, pieces_placed)) {
-          break;
-        }
+      while (y < n && under_attack(y, pieces_placed)) {
         y += 1;
       }
       if (y < n) {

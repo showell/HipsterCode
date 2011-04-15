@@ -16,14 +16,13 @@ under_attack = (y_new, pieces_placed) ->
   return false
 
 solve = (n, view) ->
-  pieces_placed = [] # array of y-coordinates
+  pieces_placed = [] # array of y-coordinates indexed by x
   x = 0
   y = 0
   place_one_queen = ->
     return if x < 0
     return if x >= n
-    while y < n
-      break if !under_attack(y, pieces_placed)
+    while y < n && under_attack(y, pieces_placed)
       y += 1
     if y < n
       x_place = x
