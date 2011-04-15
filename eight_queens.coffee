@@ -33,7 +33,7 @@ under_attack = (y_new, pieces_placed) ->
   return false
 
 solve = (n, controller) ->
-  # Solve the eight-queens iteratively by placing queens
+  # Solve the n-queens iteratively by placing queens
   # on the board, and backtracking as needed when you reach
   # a dead end.  Interact with a "controller" object that draws
   # the board and calls back to you at certain intervals.
@@ -66,12 +66,17 @@ solve = (n, controller) ->
     # to advance down the file till we find a free space
     while y < n && under_attack(y, pieces_placed)
       y += 1
+
+    # Did we find a place??
     if y < n
       x_place = x
       y_place = y
       pieces_placed[x] = y
       x += 1
       y = 0
+      # This queen position looks promising, so we yield to
+      # the controller and have it draw it.  We'll get a callback
+      # when the user is ready.
       controller.place_queen(x_place, y_place, try_to_place_queen)
     else
       backtrack()
@@ -82,6 +87,9 @@ solve = (n, controller) ->
       # the most recent queen, pull her off the board, then
       # calculate the next tentative position for her on the file
       # (but we don't actually place it until the callback).
+      #
+      # (We also call this right after getting a complete solution..
+      # by backtracking, we get to a new unique solution.)
       x -= 1
       y_hide = pieces_placed[x]
       y = y_hide + 1
@@ -90,21 +98,17 @@ solve = (n, controller) ->
 
   try_to_place_queen()
 
-chessboard_controller = (n) ->
+canvas_grid = (n) ->
+  # This is a light layer on top of the canvas to draw the
+  # eight-queens configurations.  It's just using black/blue
+  # squares to represent pieces for now.
   canvas = document.getElementById("canvas")
   ctx = canvas.getContext("2d")
   w = 40
   h = 40
-  delay = 100
-  current_callback = null
-  fadeout_callback = null
-  paused = false
-  toggle_button = document.getElementById("toggle")
-  step_button = document.getElementById("step")
-  log = document.getElementById("log")
-  num_solutions_found = 0
 
-  draw_board = ->
+  do ->
+    # Draw the initial board (a bunch of gridlines).
     for x in [0..n] 
       ctx.moveTo(x*w, 0)
       ctx.lineTo(x*w, n*h)
@@ -113,11 +117,35 @@ chessboard_controller = (n) ->
       ctx.lineTo(n*w, y*w)
     ctx.stroke()
       
-  draw = (x, y, color) ->
+  fill_square: (x, y, color) ->
+    # Nothing fancy here, just some scaling and being
+    # careful not to erase the borders.
     ctx.fillStyle = color
     x = x * w
     y = y * h
     ctx.fillRect(x+1, y+1, w-2, h-2)
+
+solution_logger = ->
+  # For now we just log solutions directly to the page.
+  dom_object = document.getElementById("log")
+  log: (v) ->
+    dom_object.innerHTML += "\n" + v.toString()
+
+chessboard_controller = (n) ->
+  # This is a bit of a kitchen sink, as it handles/dispatches all
+  # events in the page:
+  #
+  #   clicking pause/resume
+  #   timeouts for animation
+  #   algorithm wants something drawn 
+  #
+  toggle_button = document.getElementById("toggle")
+  step_button = document.getElementById("step")
+  delay = 100
+  current_callback = null
+  fadeout_callback = null
+  paused = false
+  num_solutions_found = 0
 
   toggle = ->
     if !paused
@@ -131,60 +159,60 @@ chessboard_controller = (n) ->
   step = ->
     paused = true
     toggle_button.value = "resume"
-    pulse()
+    tick()
 
   toggle_button.onclick = toggle
   step_button.onclick = step
 
   resume = ->
     return if paused
-    pulse()
+    tick()
 
-  pulse = ->
+  tick = ->
     if fadeout_callback?
       fadeout_callback()
       fadeout_callback = null
     current_callback()
 
-  log_result = (v) ->
-    log.innerHTML += "\n" + v.toString()
-
-  draw_board()
+  grid = canvas_grid(n)
+  logger = solution_logger()
 
   place_queen: (x, y, callback) ->
-    draw(x, y, 'black')
+    grid.fill_square(x, y, 'black')
     if callback?
       current_callback = callback
       setTimeout(resume, delay)
 
   hide_queen: (x, y, callback) ->
-    draw(x, y, 'red')
+    # We don't hide the square right away, but
+    # instead leave it red for one tick.
+    grid.fill_square(x, y, 'red')
     current_callback = callback
     fadeout_callback = ->
-      draw(x, y, 'white')
+      grid.fill_square(x, y, 'white')
     setTimeout(resume, delay)
 
   declare_victory: (pieces_placed, callback) ->
     num_solutions_found += 1
     delay = 5 # let's go faster after first solution
     for y, x in pieces_placed
-      draw(x, y, 'blue')
+      grid.fill_square(x, y, 'blue')
     current_callback = callback
     paused = true
     toggle_button.value = "find next solution"
-    log_result(pieces_placed)
+    logger.log(pieces_placed)
 
   clear_board: (pieces_placed, x, callback) ->
     while x < pieces_placed.length
       y = pieces_placed[x]
-      draw(x, y, 'white')
+      grid.fill_square(x, y, 'white')
       x += 1
     current_callback = callback
     setTimeout(resume, delay)
 
   declare_no_more_solutions: ->
     alert("No more solutions")
-    log_result("All #{num_solutions_found} solutions found")
+    logger.log("All #{num_solutions_found} solutions found")
 
 
 do -> 

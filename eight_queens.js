@@ -1,5 +1,5 @@
 (function() {
-  var chessboard_controller, solve, under_attack;
+  var canvas_grid, chessboard_controller, solution_logger, solve, under_attack;
   under_attack = function(y_new, pieces_placed) {
     var x, x_new, y, _ref;
     x_new = pieces_placed.length;
@@ -56,21 +56,13 @@
     };
     return try_to_place_queen();
   };
-  chessboard_controller = function(n) {
-    var canvas, ctx, current_callback, delay, draw, draw_board, fadeout_callback, h, log, log_result, num_solutions_found, paused, pulse, resume, step, step_button, toggle, toggle_button, w;
+  canvas_grid = function(n) {
+    var canvas, ctx, h, w;
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     w = 40;
     h = 40;
-    delay = 100;
-    current_callback = null;
-    fadeout_callback = null;
-    paused = false;
-    toggle_button = document.getElementById("toggle");
-    step_button = document.getElementById("step");
-    log = document.getElementById("log");
-    num_solutions_found = 0;
-    draw_board = function() {
+    (function() {
       var x, y;
       for (x = 0; (0 <= n ? x <= n : x >= n); (0 <= n ? x += 1 : x -= 1)) {
         ctx.moveTo(x * w, 0);
@@ -81,13 +73,34 @@
         ctx.lineTo(n * w, y * w);
       }
       return ctx.stroke();
+    })();
+    return {
+      fill_square: function(x, y, color) {
+        ctx.fillStyle = color;
+        x = x * w;
+        y = y * h;
+        return ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+      }
     };
-    draw = function(x, y, color) {
-      ctx.fillStyle = color;
-      x = x * w;
-      y = y * h;
-      return ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+  };
+  solution_logger = function() {
+    var dom_object;
+    dom_object = document.getElementById("log");
+    return {
+      log: function(v) {
+        return dom_object.innerHTML += "\n" + v.toString();
+      }
     };
+  };
+  chessboard_controller = function(n) {
+    var current_callback, delay, fadeout_callback, grid, logger, num_solutions_found, paused, resume, step, step_button, tick, toggle, toggle_button;
+    toggle_button = document.getElementById("toggle");
+    step_button = document.getElementById("step");
+    delay = 100;
+    current_callback = null;
+    fadeout_callback = null;
+    paused = false;
+    num_solutions_found = 0;
     toggle = function() {
       if (!paused) {
         paused = true;
@@ -101,7 +114,7 @@
     step = function() {
       paused = true;
       toggle_button.value = "resume";
-      return pulse();
+      return tick();
     };
     toggle_button.onclick = toggle;
     step_button.onclick = step;
@@ -109,32 +122,30 @@
       if (paused) {
         return;
       }
-      return pulse();
+      return tick();
     };
-    pulse = function() {
+    tick = function() {
       if (fadeout_callback != null) {
         fadeout_callback();
         fadeout_callback = null;
       }
       return current_callback();
     };
-    log_result = function(v) {
-      return log.innerHTML += "\n" + v.toString();
-    };
-    draw_board();
+    grid = canvas_grid(n);
+    logger = solution_logger();
     return {
       place_queen: function(x, y, callback) {
-        draw(x, y, 'black');
+        grid.fill_square(x, y, 'black');
         if (callback != null) {
           current_callback = callback;
           return setTimeout(resume, delay);
         }
       },
       hide_queen: function(x, y, callback) {
-        draw(x, y, 'red');
+        grid.fill_square(x, y, 'red');
         current_callback = callback;
         fadeout_callback = function() {
-          return draw(x, y, 'white');
+          return grid.fill_square(x, y, 'white');
         };
         return setTimeout(resume, delay);
       },
@@ -144,18 +155,18 @@
         delay = 5;
         for (x = 0, _len = pieces_placed.length; x < _len; x++) {
           y = pieces_placed[x];
-          draw(x, y, 'blue');
+          grid.fill_square(x, y, 'blue');
         }
         current_callback = callback;
         paused = true;
         toggle_button.value = "find next solution";
-        return log_result(pieces_placed);
+        return logger.log(pieces_placed);
       },
       clear_board: function(pieces_placed, x, callback) {
         var y;
         while (x < pieces_placed.length) {
           y = pieces_placed[x];
-          draw(x, y, 'white');
+          grid.fill_square(x, y, 'white');
           x += 1;
         }
         current_callback = callback;
@@ -163,7 +174,7 @@
       },
       declare_no_more_solutions: function() {
         alert("No more solutions");
-        return log_result("All " + num_solutions_found + " solutions found");
+        return logger.log("All " + num_solutions_found + " solutions found");
       }
     };
   };
