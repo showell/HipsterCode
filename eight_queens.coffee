@@ -20,8 +20,10 @@ solve = (n, view) ->
   x = 0
   y = 0
   place_one_queen = ->
+    if x >= n
+      view.declare_victory(pieces_placed)
+      return
     return if x < 0
-    return if x >= n
     while y < n && under_attack(y, pieces_placed)
       y += 1
     if y < n
@@ -96,6 +98,9 @@ chessboard_view = (n) ->
     draw(x, y, 'white')
     current_callback = callback
     setTimeout(resume, delay)
+  declare_victory: (pieces_placed) ->
+    for y, x in pieces_placed
+      draw(x, y, 'blue')
 
 display = (width, height) ->
   view = view_2d(width, height)

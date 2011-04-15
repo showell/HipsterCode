@@ -24,10 +24,11 @@
     y = 0;
     place_one_queen = function() {
       var x_place, y_hide, y_place;
-      if (x < 0) {
+      if (x >= n) {
+        view.declare_victory(pieces_placed);
         return;
       }
-      if (x >= n) {
+      if (x < 0) {
         return;
       }
       while (y < n && under_attack(y, pieces_placed)) {
@@ -112,6 +113,15 @@
         draw(x, y, 'white');
         current_callback = callback;
         return setTimeout(resume, delay);
+      },
+      declare_victory: function(pieces_placed) {
+        var x, y, _len, _results;
+        _results = [];
+        for (x = 0, _len = pieces_placed.length; x < _len; x++) {
+          y = pieces_placed[x];
+          _results.push(draw(x, y, 'blue'));
+        }
+        return _results;
       }
     };
   };
