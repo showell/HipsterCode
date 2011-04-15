@@ -49,6 +49,7 @@ chessboard_view = (n) ->
   current_callback = null
   paused = false
   toggle_button = document.getElementById("toggle")
+  step_button = document.getElementById("step")
 
   draw_board = ->
     for x in [0..n] 
@@ -73,9 +74,14 @@ chessboard_view = (n) ->
       paused = false
       toggle_button.value = "pause"
       current_callback()
-    false
+
+  step = ->
+    paused = true
+    toggle_button.value = "resume"
+    current_callback()
 
   toggle_button.onclick = toggle
+  step_button.onclick = step
 
   resume = ->
     current_callback() unless paused

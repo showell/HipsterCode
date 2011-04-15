@@ -51,7 +51,7 @@
     return place_one_queen();
   };
   chessboard_view = function(n) {
-    var canvas, ctx, current_callback, delay, draw, draw_board, h, paused, resume, toggle, toggle_button, w;
+    var canvas, ctx, current_callback, delay, draw, draw_board, h, paused, resume, step, step_button, toggle, toggle_button, w;
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     w = 40;
@@ -60,6 +60,7 @@
     current_callback = null;
     paused = false;
     toggle_button = document.getElementById("toggle");
+    step_button = document.getElementById("step");
     draw_board = function() {
       var x, y;
       for (x = 0; (0 <= n ? x <= n : x >= n); (0 <= n ? x += 1 : x -= 1)) {
@@ -81,15 +82,20 @@
     toggle = function() {
       if (!paused) {
         paused = true;
-        toggle_button.value = "resume";
+        return toggle_button.value = "resume";
       } else {
         paused = false;
         toggle_button.value = "pause";
-        current_callback();
+        return current_callback();
       }
-      return false;
+    };
+    step = function() {
+      paused = true;
+      toggle_button.value = "resume";
+      return current_callback();
     };
     toggle_button.onclick = toggle;
+    step_button.onclick = step;
     resume = function() {
       if (!paused) {
         return current_callback();
