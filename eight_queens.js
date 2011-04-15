@@ -1,5 +1,5 @@
 (function() {
-  var chessboard_view, display, solve, under_attack;
+  var chessboard_controller, solve, under_attack;
   under_attack = function(y_new, pieces_placed) {
     var x, x_new, y, _ref;
     x_new = pieces_placed.length;
@@ -17,7 +17,7 @@
     }
     return false;
   };
-  solve = function(n, view) {
+  solve = function(n, controller) {
     var backtrack, pieces_placed, try_to_place_queen, x, y;
     pieces_placed = [];
     x = 0;
@@ -25,11 +25,11 @@
     try_to_place_queen = function() {
       var x_place, y_place;
       if (x >= n) {
-        view.declare_victory(pieces_placed, backtrack);
+        controller.declare_victory(pieces_placed, backtrack);
         return;
       }
       if (x < 0) {
-        view.declare_no_more_solutions();
+        controller.declare_no_more_solutions();
         return;
       }
       while (y < n && under_attack(y, pieces_placed)) {
@@ -41,7 +41,7 @@
         pieces_placed[x] = y;
         x += 1;
         y = 0;
-        return view.place_queen(x_place, y_place, try_to_place_queen);
+        return controller.place_queen(x_place, y_place, try_to_place_queen);
       } else {
         return backtrack();
       }
@@ -52,18 +52,19 @@
       y_hide = pieces_placed[x];
       y = y_hide + 1;
       pieces_placed = pieces_placed.slice(0, x);
-      return view.hide_queen(x, y_hide, try_to_place_queen);
+      return controller.hide_queen(x, y_hide, try_to_place_queen);
     };
     return try_to_place_queen();
   };
-  chessboard_view = function(n) {
-    var canvas, ctx, current_callback, delay, draw, draw_board, h, log, log_result, num_solutions_found, paused, resume, step, step_button, toggle, toggle_button, w;
+  chessboard_controller = function(n) {
+    var canvas, ctx, current_callback, delay, draw, draw_board, fadeout_callback, h, log, log_result, num_solutions_found, paused, pulse, resume, step, step_button, toggle, toggle_button, w;
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     w = 40;
     h = 40;
     delay = 100;
     current_callback = null;
+    fadeout_callback = null;
     paused = false;
     toggle_button = document.getElementById("toggle");
     step_button = document.getElementById("step");
@@ -100,14 +101,22 @@
     step = function() {
       paused = true;
       toggle_button.value = "resume";
-      return current_callback();
+      return pulse();
     };
     toggle_button.onclick = toggle;
     step_button.onclick = step;
     resume = function() {
-      if (!paused) {
-        return current_callback();
+      if (paused) {
+        return;
       }
+      return pulse();
+    };
+    pulse = function() {
+      if (fadeout_callback != null) {
+        fadeout_callback();
+        fadeout_callback = null;
+      }
+      return current_callback();
     };
     log_result = function(v) {
       return log.innerHTML += "\n" + v.toString();
@@ -122,8 +131,11 @@
         }
       },
       hide_queen: function(x, y, callback) {
-        draw(x, y, 'white');
+        draw(x, y, 'red');
         current_callback = callback;
+        fadeout_callback = function() {
+          return draw(x, y, 'white');
+        };
         return setTimeout(resume, delay);
       },
       declare_victory: function(pieces_placed, callback) {
@@ -155,32 +167,10 @@
       }
     };
   };
-  display = function(width, height) {
-    var view;
-    view = view_2d(width, height);
-    return {
-      render_board: function(board) {
-        var fate, x, y, _results;
-        _results = [];
-        for (x = 0; (0 <= width ? x < width : x > width); (0 <= width ? x += 1 : x -= 1)) {
-          _results.push((function() {
-            var _results;
-            _results = [];
-            for (y = 0; (0 <= height ? y < height : y > height); (0 <= height ? y += 1 : y -= 1)) {
-              fate = board.alive([x, y]);
-              _results.push(view.draw(x, y, fate));
-            }
-            return _results;
-          })());
-        }
-        return _results;
-      }
-    };
-  };
   (function() {
-    var n, view;
+    var controller, n;
     n = 8;
-    view = chessboard_view(n);
-    return solve(n, view);
+    controller = chessboard_controller(n);
+    return solve(n, controller);
   })();
 }).call(this);
