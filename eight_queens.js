@@ -18,14 +18,14 @@
     return false;
   };
   solve = function(n, view) {
-    var backtrack, next_solution, pieces_placed, try_to_place_queen, x, y;
+    var backtrack, pieces_placed, try_to_place_queen, x, y;
     pieces_placed = [];
     x = 0;
     y = 0;
     try_to_place_queen = function() {
       var x_place, y_place;
       if (x >= n) {
-        view.declare_victory(pieces_placed, next_solution);
+        view.declare_victory(pieces_placed, backtrack);
         return;
       }
       if (x < 0) {
@@ -54,17 +54,10 @@
       pieces_placed = pieces_placed.slice(0, x);
       return view.hide_queen(x, y_hide, try_to_place_queen);
     };
-    next_solution = function() {
-      x = 0;
-      while (x < n && pieces_placed[x] < n - 1) {
-        x += 1;
-      }
-      return view.clear_board(pieces_placed, x, backtrack);
-    };
     return try_to_place_queen();
   };
   chessboard_view = function(n) {
-    var canvas, ctx, current_callback, delay, draw, draw_board, h, log, log_result, paused, resume, step, step_button, toggle, toggle_button, w;
+    var canvas, ctx, current_callback, delay, draw, draw_board, h, log, log_result, num_solutions_found, paused, resume, step, step_button, toggle, toggle_button, w;
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
     w = 40;
@@ -75,6 +68,7 @@
     toggle_button = document.getElementById("toggle");
     step_button = document.getElementById("step");
     log = document.getElementById("log");
+    num_solutions_found = 0;
     draw_board = function() {
       var x, y;
       for (x = 0; (0 <= n ? x <= n : x >= n); (0 <= n ? x += 1 : x -= 1)) {
@@ -134,6 +128,7 @@
       },
       declare_victory: function(pieces_placed, callback) {
         var x, y, _len;
+        num_solutions_found += 1;
         delay = 5;
         for (x = 0, _len = pieces_placed.length; x < _len; x++) {
           y = pieces_placed[x];
@@ -155,7 +150,8 @@
         return setTimeout(resume, delay);
       },
       declare_no_more_solutions: function() {
-        return alert("No more solutions");
+        alert("No more solutions");
+        return log_result("All " + num_solutions_found + " solutions found");
       }
     };
   };
@@ -183,7 +179,7 @@
   };
   (function() {
     var n, view;
-    n = 7;
+    n = 8;
     view = chessboard_view(n);
     return solve(n, view);
   })();

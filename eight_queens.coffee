@@ -21,7 +21,7 @@ solve = (n, view) ->
   y = 0
   try_to_place_queen = ->
     if x >= n
-      view.declare_victory(pieces_placed, next_solution)
+      view.declare_victory(pieces_placed, backtrack)
       return
     if x < 0
       view.declare_no_more_solutions()
@@ -50,14 +50,6 @@ solve = (n, view) ->
       pieces_placed = pieces_placed[0...x]
       view.hide_queen(x, y_hide, try_to_place_queen)
 
-  next_solution = ->
-    # Find the queen that is in the bottom rank, and then
-    # backtrack from there.
-    x = 0
-    while x < n && pieces_placed[x] < n - 1
-      x += 1
-    view.clear_board(pieces_placed, x, backtrack)
-
   try_to_place_queen()
 
 chessboard_view = (n) ->
@@ -71,6 +63,7 @@ chessboard_view = (n) ->
   toggle_button = document.getElementById("toggle")
   step_button = document.getElementById("step")
   log = document.getElementById("log")
+  num_solutions_found = 0
 
   draw_board = ->
     for x in [0..n] 
@@ -124,6 +117,7 @@ chessboard_view = (n) ->
     setTimeout(resume, delay)
 
   declare_victory: (pieces_placed, callback) ->
+    num_solutions_found += 1
     delay = 5 # let's go faster after first solution
     for y, x in pieces_placed
       draw(x, y, 'blue')
@@ -142,6 +136,8 @@ chessboard_view = (n) ->
 
   declare_no_more_solutions: ->
     alert("No more solutions")
+    log_result("All #{num_solutions_found} solutions found")
+
 
 display = (width, height) ->
   view = view_2d(width, height)
