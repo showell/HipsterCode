@@ -3,22 +3,10 @@
 # such that none of the queens attack each other, i.e. all pieces
 # are on distinct rows, columns, and diagonals).
 #
-# See https://github.com/showell/HipsterCode for the accompanying
-# files:
-#
-#    eight_queens.html
-#    eight_queens.js
-#
-# As of this writing, browsers do not natively support CoffeeScript,
-# so follow instructions here to install the CoffeeScript compiler:
-#
-# http://jashkenas.github.com/coffee-script/#installation
-#
-# Then do:
-#   coffee -c eight_queens.coffee
+# [repo](https://github.com/showell/HipsterCode)
 #
 
-
+# <hr>
 # Determine if a piece would be under attack on the next open
 # file at rank y_new, given the pieces already placed.
 #
@@ -33,6 +21,7 @@ under_attack = (y_new, pieces_placed) ->
     return true if x + y_new == x_new + y
   return false
 
+# <hr>
 # Solve the n-queens iteratively by placing queens
 # on the board, and backtracking as needed when you reach
 # a dead end.  Interact with a "controller" object that draws
@@ -104,8 +93,10 @@ solve = (n, controller) ->
     pieces_placed = pieces_placed[0...x]
     controller.hide_queen(x, y_hide, try_to_place_queen)
 
+  # now set everything in motion!!!
   try_to_place_queen()
 
+# <hr>
 # This is a light layer on top of the canvas to draw the
 # eight-queens configurations.  It's just using black/blue
 # squares to represent pieces for now.
@@ -133,12 +124,14 @@ canvas_grid = (n) ->
     y = y * h
     ctx.fillRect(x+1, y+1, w-2, h-2)
 
+# <hr>
 # For now we just log solutions directly to the page.
 solution_logger = ->
   dom_object = document.getElementById("log")
   log: (v) ->
     dom_object.innerHTML += "\n" + v.toString()
 
+# <hr>
 # This is a bit of a kitchen sink, as it handles/dispatches all
 # events in the page:
 #
@@ -236,6 +229,7 @@ chessboard_controller = (n) ->
     alert("No more solutions")
     logger.log("All #{num_solutions_found} solutions found")
 
+# <hr>
 # Main program:
 #
 # - controller manages UI
