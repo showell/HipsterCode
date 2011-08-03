@@ -76,11 +76,16 @@ solve = (n, controller) ->
       pieces_placed[x] = y
       x += 1
       y = 0
-      # This queen position looks promising, so we yield to
+      # This queen position is not under attack, so we yield to
       # the controller and have it draw it.  We'll get a callback
-      # when the user is ready.
+      # when the user is ready.  At this point we don't know if we
+      # have blocked out the rest of the board; we just know we
+      # are safe.
       controller.place_queen(x_place, y_place, try_to_place_queen)
     # Or did we fall off the bottom of the board and need to backtrack?
+    # (This is basically the case that the current queens have blocked
+    # off the next file; once a file is closed, you are obviously done,
+    # so then we will move the prior queen.)
     else
       backtrack()
 
@@ -152,12 +157,16 @@ chessboard_controller = (n) ->
   grid = canvas_grid(n)
   logger = solution_logger()
 
-  # toggle the text on the resume/pause button
+  # the same button is used for resume/pause, and
+  # we handle toggling the text on the button itself, 
+  # as well as implementing pause/resume
   toggle_button.onclick = ->
     if !paused
+      # handle "pause" case
       paused = true
       toggle_button.value = "resume"
     else
+      # handle "resume" case
       paused = false
       toggle_button.value = "pause"
       # call back to the algorithm to keep on trucking
@@ -176,7 +185,8 @@ chessboard_controller = (n) ->
     tick()
     
   # Do the next step in the animation algorithm, fading
-  # any square as necessary.
+  # any square as necessary. (Squares that are "hidden"
+  # actually are red for one tick/step.)
   tick = ->
     if fadeout_callback?
       fadeout_callback()
@@ -221,6 +231,7 @@ chessboard_controller = (n) ->
     solver_callback = callback
     setTimeout(try_tick, delay)
 
+  # We're done!
   declare_no_more_solutions: ->
     alert("No more solutions")
     logger.log("All #{num_solutions_found} solutions found")
