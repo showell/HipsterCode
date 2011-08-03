@@ -1,9 +1,9 @@
 (function() {
   var canvas_grid, chessboard_controller, solution_logger, solve, under_attack;
   under_attack = function(y_new, pieces_placed) {
-    var x, x_new, y, _ref;
+    var x, x_new, y, _ref, _step;
     x_new = pieces_placed.length;
-    for (x = 0, _ref = pieces_placed.length; (0 <= _ref ? x < _ref : x > _ref); (0 <= _ref ? x += 1 : x -= 1)) {
+    for (x = 0, _ref = pieces_placed.length, _step = 1; 0 <= _ref ? x < _ref : x > _ref; x += _step) {
       y = pieces_placed[x];
       if (y === y_new) {
         return true;
@@ -63,12 +63,12 @@
     w = 40;
     h = 40;
     (function() {
-      var x, y;
-      for (x = 0; (0 <= n ? x <= n : x >= n); (0 <= n ? x += 1 : x -= 1)) {
+      var x, y, _step, _step2;
+      for (x = 0, _step = 1; 0 <= n ? x <= n : x >= n; x += _step) {
         ctx.moveTo(x * w, 0);
         ctx.lineTo(x * w, n * h);
       }
-      for (y = 0; (0 <= n ? y <= n : y >= n); (0 <= n ? y += 1 : y -= 1)) {
+      for (y = 0, _step2 = 1; 0 <= n ? y <= n : y >= n; y += _step2) {
         ctx.moveTo(0, y * w);
         ctx.lineTo(n * w, y * w);
       }
@@ -93,32 +93,32 @@
     };
   };
   chessboard_controller = function(n) {
-    var current_callback, delay, fadeout_callback, grid, logger, num_solutions_found, paused, resume, step, step_button, tick, toggle, toggle_button;
+    var delay, fadeout_callback, grid, logger, num_solutions_found, paused, solver_callback, step_button, tick, toggle_button, try_tick;
     toggle_button = document.getElementById("toggle");
     step_button = document.getElementById("step");
     delay = 100;
-    current_callback = null;
+    solver_callback = null;
     fadeout_callback = null;
     paused = false;
     num_solutions_found = 0;
-    toggle = function() {
+    grid = canvas_grid(n);
+    logger = solution_logger();
+    toggle_button.onclick = function() {
       if (!paused) {
         paused = true;
         return toggle_button.value = "resume";
       } else {
         paused = false;
         toggle_button.value = "pause";
-        return current_callback();
+        return tick();
       }
     };
-    step = function() {
+    step_button.onclick = function() {
       paused = true;
       toggle_button.value = "resume";
       return tick();
     };
-    toggle_button.onclick = toggle;
-    step_button.onclick = step;
-    resume = function() {
+    try_tick = function() {
       if (paused) {
         return;
       }
@@ -129,25 +129,23 @@
         fadeout_callback();
         fadeout_callback = null;
       }
-      return current_callback();
+      return solver_callback();
     };
-    grid = canvas_grid(n);
-    logger = solution_logger();
     return {
       place_queen: function(x, y, callback) {
         grid.fill_square(x, y, 'black');
         if (callback != null) {
-          current_callback = callback;
-          return setTimeout(resume, delay);
+          solver_callback = callback;
+          return setTimeout(try_tick, delay);
         }
       },
       hide_queen: function(x, y, callback) {
         grid.fill_square(x, y, 'red');
-        current_callback = callback;
+        solver_callback = callback;
         fadeout_callback = function() {
           return grid.fill_square(x, y, 'white');
         };
-        return setTimeout(resume, delay);
+        return setTimeout(try_tick, delay);
       },
       declare_victory: function(pieces_placed, callback) {
         var x, y, _len;
@@ -157,7 +155,7 @@
           y = pieces_placed[x];
           grid.fill_square(x, y, 'blue');
         }
-        current_callback = callback;
+        solver_callback = callback;
         paused = true;
         toggle_button.value = "find next solution";
         return logger.log(pieces_placed);
@@ -169,8 +167,8 @@
           grid.fill_square(x, y, 'white');
           x += 1;
         }
-        current_callback = callback;
-        return setTimeout(resume, delay);
+        solver_callback = callback;
+        return setTimeout(try_tick, delay);
       },
       declare_no_more_solutions: function() {
         alert("No more solutions");
